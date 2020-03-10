@@ -1,4 +1,4 @@
-function out=pcapng_read(input)
+function sections=pcapng_read(in)
 % Per spec at http://xml2rfc.tools.ietf.org/cgi-bin/xml2rfc.cgi?url=
 % https://raw.githubusercontent.com/pcapng/pcapng/master/
 % draft-tuexen-opsawg-pcapng.xml&modeAsFormat=html/
@@ -39,8 +39,8 @@ interface->stats
 ips->nslookup
 That means tearing our structure apart a bit.
 %}
-  if ~is_valid_file_id(input) && exist(input,'file')
-    input=fopen(input);
+  if ~is_valid_file_id(in) && exist(in,'file')
+    in=fopen(in);
   end
 
   if exist('blk_type_enumerate','var')
@@ -91,7 +91,8 @@ Used to detect trace files corrupted because of file transfers using the HTTP
   end
   % not sure how to effectivly share all the magic numbers.... 
   magic_numbers.endian=hex2dec('1A2B3C4D');
-  sections=block_read(input,magic_numbers);
+  sections=block_read(in,magic_numbers);
+  % should this just  be the "packet" stream?  Or should we be a pcapng struct in memory after some fashion?
   
   return;
 

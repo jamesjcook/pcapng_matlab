@@ -1,90 +1,89 @@
-function opt=pcapng_option_read(input,octet_length,block_type)
+function opt=pcapng_option_read(in,octet_length,block_type)
   % temporary opt short circuit due to glitcheroonies.
-  opt=fread(input,octet_length,'uint8=>uint8');
-  
-  return;
+  %opt=fread(in,octet_length,'uint8=>uint8');
+  %return;
   opt=struct;
   octets_consumed=0;
   opt.endofopt=0;
   while octets_consumed< octet_length && ~opt.endofopt
-    opt_code=fread(input,1,'uint16=>uint16');
-    opt_length=fread(input,1,'uint16=>uint16');
+    opt_code=fread(in,1,'uint16=>uint16');
+    opt_length=fread(in,1,'uint16=>uint16');
     octets_consumed=octets_consumed+4;
     opt_tail=char_alignment(opt_length);
     if opt_code==0
       opt.endofopt=1;
     elseif opt_code==1
-      opt.comment=sprintf('%s',fread(input,opt_length,'char'));
+      opt.comment=sprintf('%s',fread(in,opt_length,'char'));
     %elseif opt_code==2573
     %  error('opt 2573');
       % unknown option, not in docs. 
-    %  opt.x_2673=fread(input,opt_length,'uint8');
+    %  opt.x_2673=fread(in,opt_length,'uint8');
     elseif opt_code==2988
-      opt.str=sprintf('%s',fread(input,opt_length,'char'));
+      opt.str=sprintf('%s',fread(in,opt_length,'char'));
     elseif opt_code==2989
-      opt.bin=fread(input,opt_length,'uint8');
+      opt.bin=fread(in,opt_length,'uint8');
     elseif opt_code==19372
-      opt.str_priv=sprintf('%s',fread(input,opt_length,'char'));
+      opt.str_priv=sprintf('%s',fread(in,opt_length,'char'));
     elseif opt_code==19373
-      opt.bin_priv=fread(input,opt_length,'uint8');
+      opt.bin_priv=fread(in,opt_length,'uint8');
     elseif block_type==hex2dec('0A0D0D0A')
       %%%% SHB
       if opt_code==2
-        opt.shb_hardware=sprintf('%s',fread(input,opt_length,'char'));
+        opt.shb_hardware=sprintf('%s',fread(in,opt_length,'char'));
       elseif opt_code==3
-        opt.shb_os=sprintf('%s',fread(input,opt_length,'char'));
+        opt.shb_os=sprintf('%s',fread(in,opt_length,'char'));
       elseif opt_code==4
-        opt.shb_userappl=sprintf('%s',fread(input,opt_length,'char'));
+        opt.shb_userappl=sprintf('%s',fread(in,opt_length,'char'));
       else
         error('opt %i unrecognized, blk %x',opt_code,block_type);
       end
     elseif block_type==1
       %%%% IDB
       if opt_code==2
-        opt.if_name=sprintf('%s',fread(input,opt_length,'char'));
+        opt.if_name=sprintf('%s',fread(in,opt_length,'char'));
       elseif opt_code==3
-        opt.if_description=sprintf('%s',fread(input,opt_length,'char'));
+        opt.if_description=sprintf('%s',fread(in,opt_length,'char'));
       elseif opt_code==4
-        if_IPv4addr=fread(input,opt_length,'uint8');
+        if_IPv4addr=fread(in,opt_length,'uint8');
         if isfield(opt,'if_IPv4addr')
           opt.if_IPv4addr=[opt.if_IPv4addr;if_IPv4addr];
         else
           opt.if_IPv4addr=if_IPv4addr;
         end
       elseif opt_code==5
-        if_IPv6addr=fread(input,opt_length,'uint8');
+        if_IPv6addr=fread(in,opt_length,'uint8');
         if isfield(opt,'if_IPv6addr')
           opt.if_IPv6addr=[opt.if_IPv6addr;if_IPv6addr];
         else
           opt.if_IPv6addr=if_IPv6addr;
         end
       elseif opt_code==6
-        opt.if_MACaddr=fread(input,opt_length,'uint8');
+        opt.if_MACaddr=fread(in,opt_length,'uint8');
       elseif opt_code==7
-        opt.if_EUIaddr=fread(input,opt_length,'uint8');
+        opt.if_EUIaddr=fread(in,opt_length,'uint8');
       elseif opt_code==8
-        opt.if_speed=fread(input,1,'uint64=>uint64');
+        opt.if_speed=fread(in,1,'uint64=>uint64');
       elseif opt_code==9
-        opt.if_tsresol=fread(input,opt_length,'uint8');
+        opt.if_tsresol=fread(in,opt_length,'uint8');
       elseif opt_code==10
-        opt.if_tzone=fread(input,opt_length,'uint8');
+        opt.if_tzone=fread(in,opt_length,'uint8');
       elseif opt_code==11
-        opt.if_filter=fread(input,opt_length,'uint8');
+        opt.if_filter=fread(in,opt_length,'uint8');
       elseif opt_code==12
-        opt.if_os=sprintf('%s',fread(input,opt_length,'char'));
+        opt.if_os=sprintf('%s',fread(in,opt_length,'char'));
       elseif opt_code==13
-        opt.if_fcslen=fread(input,opt_length,'uint8');
+        opt.if_fcslen=fread(in,opt_length,'uint8');
       elseif opt_code==14
-        opt.if_tsoffset=fread(input,1,'uint64=>uint64');
+        opt.if_tsoffset=fread(in,1,'uint64=>uint64');
       elseif opt_code==15
-        opt.if_hardware=sprintf('%s',fread(input,opt_length,'char'));
+        opt.if_hardware=sprintf('%s',fread(in,opt_length,'char'));
       else
         error('opt %i unrecognized, blk %x',opt_code,block_type);
       end
     elseif block_type==6
       %%%% EPB
       if opt_code==2
-        opt.epb_flags=fread(input,1,'uint32=>uint32');
+        opt.epb_flags=fread(in,1,'uint32=>uint32');
         % 0-1 00 unkn, 01 inbound, 10 outbound
         dir=bitget(opt.epb_flags(1:2));
         if dir==2
@@ -136,7 +135,7 @@ function opt=pcapng_option_read(input,octet_length,block_type)
         % 24 crc
         opt.epb_err.crc_error=bitget(opt.epb_flags,25)
       elseif opt_code==3
-        opt.epb_hash=fread(input,opt_length,'uint8');
+        opt.epb_hash=fread(in,opt_length,'uint8');
         if opt.epb_hash(1)==0
           opt.epb_hash_alg='2s compliment';
         elseif opt.epb_hash(1)==1
@@ -153,14 +152,14 @@ function opt=pcapng_option_read(input,octet_length,block_type)
           error('Unrecognized packet hash algorithm');
         end
       elseif opt_code==4
-        opt.epb_dropcount=fread(input,1,'uint64=>uint64');
+        opt.epb_dropcount=fread(in,1,'uint64=>uint64');
       else
         error('opt %i unrecognized, blk %x',opt_code,block_type);
       end
     else
       error('opt %i unrecognized, blk %x',opt_code,block_type);
     end
-    scrap=fread(input,opt_tail,'uint8');
+    scrap=fread(in,opt_tail,'uint8');
     octets_consumed=octets_consumed+opt_length+opt_tail;
   end
   if octets_consumed~=octet_length

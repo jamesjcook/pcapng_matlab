@@ -1,5 +1,5 @@
 
-function sp=block_sp(input,  magic_numbers,  blk_len,idb)
+function sp=block_sp(in,  magic_numbers,  blk_len,idb)
 % Simple Packet Block (SPB) 
 %{
     0                   1                   2                   3
@@ -24,12 +24,12 @@ function sp=block_sp(input,  magic_numbers,  blk_len,idb)
     error('inteface description not handled for simple packet yet.');
   end
   packet=struct;
-  packet.length=fread(input,1,'uint32=>uint32');
+  packet.length=fread(in,1,'uint32=>uint32');
   trailing=char_alignment(packet.length);
-  packet.data=fread(input,packet.length,'uint8=>uint8');
+  packet.data=fread(in,packet.length,'uint8=>uint8');
   if trailing
     ftell
-    fseek(input,trailing);
+    fseek(in,trailing);
     ftell
     fprintf('Is this the problem');
   end
