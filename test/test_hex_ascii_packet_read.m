@@ -1,0 +1,1 @@
+cap=capture_read('test_hex_ascii_packet.txt');

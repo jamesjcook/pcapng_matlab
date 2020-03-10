@@ -10,6 +10,10 @@ function cap=capture_read(txt_cap)
 % (Sorry wasn't cool enough to craft a struct array.)
 %
 
+% code trailing:D 
+code_path=fileparts(mfilename('fullpath'));
+addpath(fullfile(code_path,'hex_ascii'));
+addpath(fullfile(code_path,'utils'));
 
 %{
 k12 text capture example, no attempt to validate against official docs, just the output of wireshark. Ex of two packets in following block comment
