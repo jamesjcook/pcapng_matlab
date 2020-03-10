@@ -1,5 +1,5 @@
 
-function id=block_id(input,  blk_len,  block_type)
+function id=block_id(input,  magic_numbers,  blk_len,  block_type)
 % Interface Description Block
 %{
     0                   1                   2                   3
@@ -23,7 +23,7 @@ function id=block_id(input,  blk_len,  block_type)
   id.LinkType=fread(input,1,'uint16=>uint16');
   id.Reserved=fread(input,1,'uint16=>uint16');
   id.SnapLen=fread(input,1,'uint32=>uint32');
-  opt_len=blk_len-2 -2 -4  -4;
+  opt_len=blk_len-16  -4;
   if mod(opt_len,4)
     error('failure to get opt len in IDB, bad math whooo whooo!');
   end

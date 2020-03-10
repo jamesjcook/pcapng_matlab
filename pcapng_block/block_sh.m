@@ -1,6 +1,6 @@
 
 
-function sh=block_sh(input,  blk_len,  block_type)
+function sh=block_sh(input,  magic_numbers,  blk_len,  block_type)
 % Section Header Block
 %{
    0                   1                   2                   3
@@ -27,10 +27,11 @@ function sh=block_sh(input,  blk_len,  block_type)
 %}
   % section header.... get endian for section
   sh.byte_magic=fread(input,1,'uint32=>uint32');
-  if sh.byte_magic==byte_magic
+  if sh.byte_magic==magic_numbers.endian
     % native byte ording
-  elseif swapbytes(sh.byte_magic)==byte_magic
+  elseif swapbytes(sh.byte_magic)==magic_numbers.endian
     % swap our bytes :p
+    % but wait... we don't know which we are ?
   else 
     % byte error
     error('byte magic not comprehensible :( Potential data corruption');

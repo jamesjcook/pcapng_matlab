@@ -18,6 +18,9 @@ function out=pcapng_read(input)
 |                      Block Total Length                       |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 %}
+code_path=fileparts(mfilename('fullpath'));
+addpath(fullfile(code_path,'pcapng_block'));
+addpath(fullfile(code_path,'utils'));
 %{
 Section Header
 |
@@ -86,9 +89,8 @@ Used to detect trace files corrupted because of file transfers using the HTTP
 0x80000000-0xFFFFFFFF	
 %}
   end
-  
+  % not sure how to effectivly share all the magic numbers.... 
   magic_numbers.endian=hex2dec('1A2B3C4D');
-
   sections=block_read(input,magic_numbers);
   
   return;

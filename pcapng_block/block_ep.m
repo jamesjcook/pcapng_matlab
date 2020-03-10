@@ -1,5 +1,5 @@
 
-function ep=block_ep(input,blk_len,block_type,idb)
+function ep=block_ep(input,  magic_numbers,  blk_len,  block_type,  idb)
 % Enhanced Packet Block (EPB)
 %{
    0                   1                   2                   3
@@ -44,6 +44,7 @@ function ep=block_ep(input,blk_len,block_type,idb)
   ep.orig_length=fread(input,1,'uint32=>uint32');
   ep.data=fread(input,ep.length,'uint8=>uint8');
   trailing=char_alignment(ep.length);
+  scrap=fread(input,trailing,'uint8');
   opt_len=blk_len-28-ep.length-trailing-4;
   if mod(opt_len,4)
     error('failure to get opt len in EPB, bad math whooo whooo!');

@@ -1,5 +1,5 @@
 
-function sp=block_sp(input,blk_len,idb)
+function sp=block_sp(input,  magic_numbers,  blk_len,idb)
 % Simple Packet Block (SPB) 
 %{
     0                   1                   2                   3
