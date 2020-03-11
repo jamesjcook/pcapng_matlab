@@ -1,4 +1,4 @@
-function human_time=packet_time(packet_time,interface_opts)
+function human_time=packet_time(time,interface_opts)
   % Convert packet timestamp to human readable text using interface opts.
   base=10;
   time_exp=6;
@@ -23,9 +23,9 @@ function human_time=packet_time(packet_time,interface_opts)
   end
   % drop time_res_factor of digits off timestamp, then treat as normal, 
   % eg, epoc 1970-01-01 00:00:00 time.
-  seconds=floor(packet_time*time_res_factor);
-  ms=packet_time-seconds;
-  % timely in str format strftime('%c',gmtime(seconds))
-  datestr(packet_time,30)
-  %gmtime (t)
+  seconds=double(time)*time_res_factor;
+  t_struct=gmtime(seconds);
+  %t_struct=localtime(seconds);
+  % timely in str format 
+  human_time=strftime('%FT%T',t_struct);
 end
