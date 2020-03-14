@@ -1,9 +1,17 @@
-function sections=pcapng_read(in)
+function sections=pcapng_read(in,ret,sections)
+  % returns after first return condition is met, (b)lock, (s)econds, (p)ackets.
+  % input is either open app/file handle or path to static file to read.
+  % Returns the logical block hierarchy like the spec talks of.
+
+code_path=fileparts(mfilename('fullpath'));
+addpath(fullfile(code_path,'pcapng_block'));
+addpath(fullfile(code_path,'utils'));
 % Per spec at http://xml2rfc.tools.ietf.org/cgi-bin/xml2rfc.cgi?url=
 % https://raw.githubusercontent.com/pcapng/pcapng/master/
 % draft-tuexen-opsawg-pcapng.xml&modeAsFormat=html/
 % ascii&type=ascii#rfc.section.3
 % Here is general format.
+if 0  % doc block
 %{
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -18,9 +26,7 @@ function sections=pcapng_read(in)
 |                      Block Total Length                       |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 %}
-code_path=fileparts(mfilename('fullpath'));
-addpath(fullfile(code_path,'pcapng_block'));
-addpath(fullfile(code_path,'utils'));
+
 %{
 Section Header
 |
@@ -31,6 +37,7 @@ Section Header
 |
 +- Name Resolution
 %}
+end
 
 %{
 In memory lets organize things neatishly, like
@@ -39,11 +46,13 @@ interface->stats
 ips->nslookup
 That means tearing our structure apart a bit.
 %}
-  if ~is_valid_file_id(in) && exist(in,'file')
+  if ~isnumeric(in) && exist(in,'file')
     in=fopen(in);
   end
+  %fingerprint=fread(in,5,'uint8=>uint8');
 
-  if exist('blk_type_enumerate','var')
+  if 0 % doc block of block types
+    
 %{
 block type registry 
 0x00000000	Reserved ???
@@ -91,7 +100,12 @@ Used to detect trace files corrupted because of file transfers using the HTTP
   end
   % not sure how to effectivly share all the magic numbers.... 
   magic_numbers.endian=hex2dec('1A2B3C4D');
-  sections=block_read(in,magic_numbers);
+  %ret.p=inf;
+  %ret.s=1;
+  % blocks seems very similar to packets...
+  %ret.b=10; 
+  % read stop logic is currently in block read, should migrate that up here.
+  sections=block_read(in,  ret,  sections,  magic_numbers);
   % should this just  be the "packet" stream?  Or should we be a pcapng struct in memory after some fashion?
   
   return;

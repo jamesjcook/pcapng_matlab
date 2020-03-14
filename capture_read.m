@@ -1,10 +1,13 @@
-function cap=capture_read(txt_cap)
+function [cap,cap_meta]=capture_read(cap_file,cap_meta)
 % function cap=capture_read(txt_cap)
-% given a wireshark capture file in k12 text format (for now, maybe cooler types in future)
+% given a wireshark capture in a structure or in k12 text format (for now, maybe cooler types in future)
 % divde it up into appropriate struct fields for: 
 % an ETHER frame? 
 % + ipv4 
 % + udp packet.
+% 
+% grand ip packet docs here 
+% http://tracesplay.sourceforge.net/help.html
 % 
 % returns cell array of packets structures. 
 % (Sorry wasn't cool enough to craft a struct array.)
@@ -12,7 +15,8 @@ function cap=capture_read(txt_cap)
 
 % code trailing:D 
 code_path=fileparts(mfilename('fullpath'));
-addpath(fullfile(code_path,'hex_ascii'));
+addpath(fullfile(code_path,'packet_asciihex'));
+addpath(fullfile(code_path,'packet_bin'));
 addpath(fullfile(code_path,'utils'));
 
 %{
@@ -89,10 +93,53 @@ cap =
 
 }
 %}
-
-  pack_sep='+---------+---------------+----------+';
-
+%{
+  if ~exist('cap_meta','var')
+    cap_meta=struct;
+  end
+  %}
   cap={};
+  if isstruct(cap_file)
+    for sect=1:numel(cap_file)
+    %{
+      cap_meta(sect).header=capfile(sect).header;
+      cap_meta(sect).block_count=capfile(sect).block_count;
+      for i_n=1:numel(sect_meta(sect).interface)
+        cap_meta(sect).interface(i_n)=capfile(sect).interface(i_n);
+        cap_meta(sect).interface(i_n).packet_idx=[];
+      end
+    %}
+      for pn=1:numel(cap_file(sect).packets)
+        ef=bin2etherframe(cap_file(sect).packets(pn).data);
+        try
+          ipv4=bin2ipv4(ef.payload);
+          ef=rmfield(ef,'payload');
+        catch
+          % fprintf('skipping packet %i\n',pn);
+          continue;
+        end
+        udp=bin2udp(ipv4.payload);
+        ipv4=rmfield(ipv4,'payload');
+        packet=combine_struct(struct,ef, 'phy_');
+        if exist('ipv4','var')
+          packet=combine_struct(packet,ipv4,'ip_');
+        elseif exist('ipv6','var')
+          packet=combine_struct(packet,ipv6,'ip_');
+        else
+          
+        end
+        if exist('udp','var')
+          packet=combine_struct(packet,udp, 'udp_');
+        elseif exist('tcp','var')
+          packet=combine_struct(packet,tcp, 'udp_');
+        else
+        end
+        packet.capture_time=packet_time(cap_file(sect).packets(pn).timestamp,cap_file(sect).interface.options);
+        cap{end+1}=packet;
+      end
+    end
+  else
+  pack_sep='+---------+---------------+----------+';
   fid = fopen(txt_cap);
   onCleanup(@() fclose(fid));
   dstlineidx = 0;
@@ -158,7 +205,7 @@ cap =
       packet.capture_time=ts_line;
       cap{end+1}=packet;
     end
-    
+    end
   end
 
 return;

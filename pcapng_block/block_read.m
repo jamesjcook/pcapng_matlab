@@ -1,5 +1,17 @@
+function sections=block_read(in,  ret,  sect_meta,  magic_numbers)
+  % return conditions is ugly. 
+  % either N seconds, or N blocks or N packets all make sense.
+  %{
+  ret.s=0;
+  ret.p=0;
+  ret.b=0;
+  %}
+  max_seconds=ret.s;
+  max_packets=ret.p;
+  max_blocks=ret.b;
 
-function sections=block_read(in,  magic_numbers)
+
+  cont=fieldnames(sect_meta);
   sect_template=struct;
   sect_template.block_count=0;
   sect_template.header=struct;
@@ -11,6 +23,28 @@ function sections=block_read(in,  magic_numbers)
   sections(1)=[];
   %sect_template.id=struct;
   current_section=0;
+  start_t=0;
+  if numel(cont)~=0
+    for current_section=1:numel(sect_meta)
+      sections(current_section).block_count   =sect_meta(current_section).block_count;
+      sections(current_section).header        =sect_meta(current_section).header;
+      for i_n=1:numel(sect_meta(current_section).interface)
+        sections(current_section).interface(i_n) =sect_meta(current_section).interface(i_n);
+        sections(current_section).interface(i_n).last_packet_timestamp=  ...
+            sect_meta(current_section).interface(i_n).last_packet_timestamp;
+        sections(current_section).interface(i_n).packet_idx=[];
+        
+        if ~isfield(sections(current_section).interface(i_n),'last_packet_timestamp')
+          continue;
+        end
+        if sections(current_section).interface(i_n).last_packet_timestamp> start_t
+          [~,start_t]=packet_time(sections(current_section).interface(i_n).last_packet_timestamp,  ...
+              sections(current_section).interface(i_n).options);
+        end
+      end
+    end
+  end
+  delta=0;
   while ~feof(in)
     block=struct;
     block.type=fread(in,1,'uint32=>uint32');
@@ -22,7 +56,6 @@ function sections=block_read(in,  magic_numbers)
     if block.type==3
     % 0x00000003	Simple Packet Block
       sp=block_sp(in,  magic_numbers,  block.total_length,  block.type);
-      % get interface and put the sp on it
       sections(current_section).packets(end+1)=sp;
       packet_idx=numel(sections(current_section).packets);
       % simple packets assume interface 0, there is a MUST in the standard.
@@ -34,9 +67,18 @@ function sections=block_read(in,  magic_numbers)
       ep=block_ep(in,  magic_numbers,  block.total_length,  block.type);
       sections(current_section).packets(end+1)=ep;
       packet_idx=numel(sections(current_section).packets);
+      % get interface, and put p data on it
       sections(current_section).interface(ep.interface+1).packet_idx(end+1)=packet_idx;
+      sections(current_section).interface(ep.interface+1).last_packet_timestamp=sections(current_section).packets(packet_idx).timestamp;
+      if max_seconds<inf
+        [~,p_time]=packet_time(sections(current_section).packets(packet_idx).timestamp,sections(current_section).interface(ep.interface+1).options);
+        if start_t==0
+          start_t=p_time;
+        else
+          delta=p_time-start_t;
+        end
+      end
       clear('ep');
-      % get interface, and put sp data on it
     elseif block.type== 4
     % 0x00000004	Name Resolution Block
       error('unimplemented %x ',block.type);
@@ -77,10 +119,16 @@ function sections=block_read(in,  magic_numbers)
     if block.total_length ~= block.total_length2
       db_inplace(mfilename,sprintf('Corrupt block - %i in len %i, out len %i',sections(current_section).block_count, block.total_length,  ...
       block.total_length2)  );
-
       %error('Corrupt block - %i',sections.block_count);
     end
     sections(current_section).block_count=sections(current_section).block_count+1;
+     ...
+    if delta >= max_seconds...
+      || sections(current_section).block_count >= max_blocks ...
+      || numel(sections(current_section).packets) >= max_packets
+      % end condition met, quit reading
+      break;
+    end
   end
   
   
