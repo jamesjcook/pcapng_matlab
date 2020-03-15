@@ -18,7 +18,7 @@ function sp=block_sp(in,  blk_len,  block_type,  idb)
    |                      Block Total Length                       |
    +---------------------------------------------------------------+
 %}
-  if exist('idb')
+  if exist('idb','var')
     % This is here to handle the SnapLen option from interface
     error('inteface description not handled for simple bl yet.');
   end

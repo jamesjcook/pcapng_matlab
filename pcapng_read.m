@@ -24,6 +24,7 @@ function capfile=pcapng_read(in,ret,capfile)
 code_path=fileparts(mfilename('fullpath'));
 addpath(fullfile(code_path,'pcapng_block'));
 addpath(fullfile(code_path,'utils'));
+debugging=0;
 % Per spec at http://xml2rfc.tools.ietf.org/cgi-bin/xml2rfc.cgi?url=
 % https://raw.githubusercontent.com/pcapng/pcapng/master/
 % draft-tuexen-opsawg-pcapng.xml&modeAsFormat=html/
@@ -144,6 +145,8 @@ Used to detect trace files corrupted because of file transfers using the HTTP
   t_delta=0;
   t_start=0;
   t_read=tic;
+  start_packet=capfile.packet_seq;
+  start_block=capfile.block_count;
   curs=capfile.current_section;
   while ~feof(in)
     block=struct;
@@ -169,7 +172,9 @@ Used to detect trace files corrupted because of file transfers using the HTTP
           t_delta=p_time-t_start;
         end
       end
-      clear('ep');
+      if debugging>50
+        clear('ep');
+      end
     elseif block.type==3
     % 0x00000003	Simple Packet Block
       sp=block_sp(in,  block.total_length,  block.type,  capfile.magic_numbers);
@@ -178,7 +183,9 @@ Used to detect trace files corrupted because of file transfers using the HTTP
       % simple packets assume interface 0, there is a MUST in the standard.
       % dont mind my 1 vs. 0 indesing here.
       capfile.sections(curs).interface(1).packet_idx(end+1)=capfile.packet_seq;
-      clear('sp');
+      if debugging>50
+        clear('sp');
+      end
     elseif block.type== 2
     % 0x00000002	Packet Block
       error('unimplemented %x ',block.type);
@@ -208,7 +215,9 @@ Used to detect trace files corrupted because of file transfers using the HTTP
       capfile.current_section=curs;
       capfile.sections(curs)=capfile.section_template;
       capfile.sections(curs).header=sh;
-      clear('sh');
+      if debugging>50
+        clear('sh');
+      end
     elseif block.type==hex2dec('00000BAD') ... 
       || block.type==hex2dec('40000BAD')
       error('cust blocks unimplemented');
@@ -231,8 +240,8 @@ Used to detect trace files corrupted because of file transfers using the HTTP
       t_delta=toc(t_read);
     %end
     if t_delta >= max_seconds...
-      || capfile.block_count >= max_blocks ...
-      || numel(capfile.packet_seq) >= max_packets
+      ||capfile.block_count -start_block >= max_blocks ...
+      ||capfile.packet_seq -start_packet >= max_packets
       % end condition met, quit reading
       break;
     end

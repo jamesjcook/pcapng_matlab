@@ -1,4 +1,4 @@
-classdef pcapng
+classdef pcapng <handle
   properties (Constant = true )
     magic_numbers=struct('endian',hex2dec('1A2B3C4D'));
     % cant imply a struct when doing constantant.

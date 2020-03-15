@@ -3,11 +3,12 @@ function [human_time,seconds]=packet_time(time,interface_opts)
   base=10;
   time_exp=6;
   if isfield(interface_opts,'if_tsresol')
-    usebas2=bitget(interface_opts.if_tsresol,8);
-    if usebas2
+    %usebas2=bitget(interface_opts.if_tsresol,8);
+    if interface_opts.if_tsresol>=128
       base=2;
+      time_exp=interface_opts.if_tsresol-128;
     end
-    time_exp=bitset(interface_opts.if_tsresol,8,0);
+    %time_exp=bitset(interface_opts.if_tsresol,8,0);
   end
   % 6 is microsecond resolution. 
   time_res_factor=double(base)^(-double(time_exp));
