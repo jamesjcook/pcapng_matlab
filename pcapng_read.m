@@ -37,6 +37,23 @@ Section Header
 |
 +- Name Resolution
 %}
+
+% With this idea of logical dumpfile hierarchy, 
+% lets make a capfile a struct with sections and name resolutions.
+% sections are an array of structs
+% section structs have an array of interface structs, packets. 
+
+%{
+EX, 
+capfile.name_res_map.hexip.?
+capfile.sections(1).interface(1).packets?
+capfile.sections(1).interface(1).stats
+capfile.sections(1).interface(2).
+capfile.sections(1).interface(1).stats
+capfile.sections(2).interface(1).
+capfile.sections(2).interface(2).
+capfile.packet_count
+%}
 end
 
 %{

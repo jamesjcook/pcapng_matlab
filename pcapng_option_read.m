@@ -37,51 +37,8 @@ function opt=pcapng_option_read(in,octet_length,block_type)
       else
         error('opt %i unrecognized, blk %x',opt_code,block_type);
       end
-    elseif block_type==1
-      %%%% IDB
-      if opt_code==2
-        opt.if_name=sprintf('%s',fread(in,opt_length,'char=>char'));
-      elseif opt_code==3
-        opt.if_description=sprintf('%s',fread(in,opt_length,'char=>char'));
-      elseif opt_code==4
-        if_IPv4addr=fread(in,opt_length,'uint8=>uint8');
-        if isfield(opt,'if_IPv4addr')
-          opt.if_IPv4addr=[opt.if_IPv4addr;if_IPv4addr];
-        else
-          opt.if_IPv4addr=if_IPv4addr;
-        end
-      elseif opt_code==5
-        if_IPv6addr=fread(in,opt_length,'uint8=>uint8');
-        if isfield(opt,'if_IPv6addr')
-          opt.if_IPv6addr=[opt.if_IPv6addr;if_IPv6addr];
-        else
-          opt.if_IPv6addr=if_IPv6addr;
-        end
-      elseif opt_code==6
-        opt.if_MACaddr=fread(in,opt_length,'uint8=>uint8');
-      elseif opt_code==7
-        opt.if_EUIaddr=fread(in,opt_length,'uint8=>uint8');
-      elseif opt_code==8
-        opt.if_speed=fread(in,1,'uint64=>uint64');
-      elseif opt_code==9
-        opt.if_tsresol=fread(in,opt_length,'uint8=>uint8');
-      elseif opt_code==10
-        opt.if_tzone=fread(in,opt_length,'uint8=>uint8');
-      elseif opt_code==11
-        opt.if_filter=fread(in,opt_length,'uint8=>uint8');
-      elseif opt_code==12
-        opt.if_os=sprintf('%s',fread(in,opt_length,'char=>char'));
-      elseif opt_code==13
-        opt.if_fcslen=fread(in,opt_length,'uint8=>uint8');
-      elseif opt_code==14
-        opt.if_tsoffset=fread(in,1,'uint64=>uint64');
-      elseif opt_code==15
-        opt.if_hardware=sprintf('%s',fread(in,opt_length,'char=>char'));
-      else
-        error('opt %i unrecognized, blk %x',opt_code,block_type);
-      end
-    elseif block_type==6
-      %%%% EPB
+    elseif block_type==6 ||block_type==2
+      %%%% EPB/PB
       if opt_code==2
         opt.epb_flags=fread(in,1,'uint32=>uint32');
         % 0-1 00 unkn, 01 inbound, 10 outbound
@@ -153,6 +110,68 @@ function opt=pcapng_option_read(in,octet_length,block_type)
         end
       elseif opt_code==4
         opt.epb_dropcount=fread(in,1,'uint64=>uint64');
+      else
+        error('opt %i unrecognized, blk %x',opt_code,block_type);
+      end
+    elseif block_type==1
+      %%%% IDB
+      if opt_code==2
+        opt.if_name=sprintf('%s',fread(in,opt_length,'char=>char'));
+      elseif opt_code==3
+        opt.if_description=sprintf('%s',fread(in,opt_length,'char=>char'));
+      elseif opt_code==4
+        if_IPv4addr=fread(in,opt_length,'uint8=>uint8');
+        if isfield(opt,'if_IPv4addr')
+          opt.if_IPv4addr=[opt.if_IPv4addr;if_IPv4addr];
+        else
+          opt.if_IPv4addr=if_IPv4addr;
+        end
+      elseif opt_code==5
+        if_IPv6addr=fread(in,opt_length,'uint8=>uint8');
+        if isfield(opt,'if_IPv6addr')
+          opt.if_IPv6addr=[opt.if_IPv6addr;if_IPv6addr];
+        else
+          opt.if_IPv6addr=if_IPv6addr;
+        end
+      elseif opt_code==6
+        opt.if_MACaddr=fread(in,opt_length,'uint8=>uint8');
+      elseif opt_code==7
+        opt.if_EUIaddr=fread(in,opt_length,'uint8=>uint8');
+      elseif opt_code==8
+        opt.if_speed=fread(in,1,'uint64=>uint64');
+      elseif opt_code==9
+        opt.if_tsresol=fread(in,opt_length,'uint8=>uint8');
+      elseif opt_code==10
+        opt.if_tzone=fread(in,opt_length,'uint8=>uint8');
+      elseif opt_code==11
+        opt.if_filter=fread(in,opt_length,'uint8=>uint8');
+      elseif opt_code==12
+        opt.if_os=sprintf('%s',fread(in,opt_length,'char=>char'));
+      elseif opt_code==13
+        opt.if_fcslen=fread(in,opt_length,'uint8=>uint8');
+      elseif opt_code==14
+        opt.if_tsoffset=fread(in,1,'uint64=>uint64');
+      elseif opt_code==15
+        opt.if_hardware=sprintf('%s',fread(in,opt_length,'char=>char'));
+      else
+        error('opt %i unrecognized, blk %x',opt_code,block_type);
+      end
+    elseif block_type==5
+      %%% ISB
+      if opt_code==2
+        opt.isb_starttime=timestamp_read(in);
+      elseif opt_code==3
+        opt.isb_endtime=timestamp_read(in);
+      elseif opt_code==4
+        opt.isb_ifrecv=fread(in,1,'uint64=>uint64');
+      elseif opt_code==5
+        opt.isb_ifdrop=fread(in,1,'uint64=>uint64');
+      elseif opt_code==6
+        opt.isb_filteraccept=fread(in,1,'uint64=>uint64');
+      elseif opt_code==7
+        opt.isb_osdrop=fread(in,1,'uint64=>uint64');
+      elseif opt_code==8
+        opt.isb_usrdeliv=fread(in,1,'uint64=>uint64');
       else
         error('opt %i unrecognized, blk %x',opt_code,block_type);
       end

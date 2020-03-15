@@ -11,7 +11,6 @@ function [human_time,seconds]=packet_time(time,interface_opts)
   end
   % 6 is microsecond resolution. 
   time_res_factor=double(base)^(-double(time_exp));
-  
   if isfield(interface_opts,'if_tzone')
     error('if_tzone not implemented');
   end

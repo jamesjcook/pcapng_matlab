@@ -23,7 +23,7 @@ function id=block_id(in,  magic_numbers,  blk_len,  block_type)
   id.LinkType=fread(in,1,'uint16=>uint16');
   id.Reserved=fread(in,1,'uint16=>uint16');
   id.SnapLen=fread(in,1,'uint32=>uint32');
-  opt_len=blk_len-16  -4;
+  opt_len=blk_len-16-4;
   if mod(opt_len,4)
     error('failure to get opt len in IDB, bad math whooo whooo!');
   end

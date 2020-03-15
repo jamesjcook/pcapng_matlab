@@ -22,6 +22,8 @@ p{end+1}=capfile.packets;
 
 section_count=numel(capfile)
 
+
+%{
 cap=capture_read(capfile)
 packet_time(capfile(1).packets(1).timestamp,capfile(1).interface(1).options)
 %sum(numel(capfile(:).interface))
@@ -35,7 +37,7 @@ ipv4=bin2ipv4(ef.payload);
 ef=rmfield(ef,'payload');
 udp=bin2udp(ipv4.payload);
 ipv4=rmfield(ipv4,'payload');
-
+%}
 %{
 curpos=ftell(input)
 fseek(input,curpose,'bof')

@@ -1,6 +1,4 @@
-
-
-function is=block_is(input,  magic_numbers,  blk_len)
+function bl=block_is(input,  magic_numbers,  blk_len)
 %Interface Statistics Block
 %{
     0                   1                   2                   3
@@ -22,5 +20,13 @@ function is=block_is(input,  magic_numbers,  blk_len)
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                      Block Total Length                       |
    +---------------------------------------------------------------+
+   
 %}
+  bl.interface=fread(in,1,'uint32=>uint32');
+  bl.timestamp=timestamp_read(in);
+  opt_len=blk_len-20-4;
+  if opt_len>0
+    % bl.options=fread(in,opt_len,'uint8=>uint8');
+    bl.options=pcapng_option_read(in,opt_len,block_type);
+  end
 end
