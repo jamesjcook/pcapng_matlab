@@ -1,4 +1,4 @@
-function bl=block_ep(in,  magic_numbers,  blk_len,  block_type,  idb)
+function bl=block_ep(in,  blk_len,  block_type,  idb)
 % Enhanced Packet Block (EPB)
 %{
    0                   1                   2                   3
@@ -48,5 +48,7 @@ function bl=block_ep(in,  magic_numbers,  blk_len,  block_type,  idb)
   if opt_len>0
     %bl.options=fread(in,opt_len,'uint8=>uint8');
     bl.options=pcapng_option_read(in,opt_len,block_type);
+  elseif opt_len<0
+    error('Problem with packet length, need to implement maxlen from interface description');
   end
 end

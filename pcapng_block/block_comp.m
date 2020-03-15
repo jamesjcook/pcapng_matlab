@@ -1,4 +1,3 @@
-
 function comp_b=block_comp(input,blk_len)
 %  Compression Bloc
 %{

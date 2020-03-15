@@ -1,5 +1,4 @@
-
-function sp=block_sp(in,  magic_numbers,  blk_len,idb)
+function sp=block_sp(in,  blk_len,  block_type,  idb)
 % Simple Packet Block (SPB) 
 %{
     0                   1                   2                   3
@@ -21,16 +20,21 @@ function sp=block_sp(in,  magic_numbers,  blk_len,idb)
 %}
   if exist('idb')
     % This is here to handle the SnapLen option from interface
-    error('inteface description not handled for simple packet yet.');
+    error('inteface description not handled for simple bl yet.');
   end
-  packet=struct;
-  packet.length=fread(in,1,'uint32=>uint32');
-  trailing=char_alignment(packet.length);
-  packet.data=fread(in,packet.length,'uint8=>uint8');
-  if trailing
-    ftell
-    fseek(in,trailing);
-    ftell
-    fprintf('Is this the problem');
+  bl=struct;
+  % this is the original packet length, the block length was already eaten by the main function.
+  bl.orig_length=fread(in,1,'uint32=>uint32');
+  bl.data=fread(in,bl.orig_length,'uint8=>uint8');
+  trailing=char_alignment(bl.orig_length);
+  scrap=fread(in,trailing,'uint8');
+  opt_len=blk_len-12-bl.orig_length-trailing-4;
+  if mod(opt_len,4)
+    error('failure to get opt len in EPB, bad math whooo whooo!');
+  end
+  if opt_len>0
+    bl.options=pcapng_option_read(in,opt_len,block_type);
+  elseif opt_len<0
+    error('Problem with packet length, need to implement maxlen from interface description');
   end
 end

@@ -1,4 +1,3 @@
-
 function nr=block_nr(input,blk_len)
 %Name Resolution Block
 %{
@@ -27,4 +26,6 @@ function nr=block_nr(input,blk_len)
    |                      Block Total Length                       |
    +---------------------------------------------------------------+
 %}
+
+
 end

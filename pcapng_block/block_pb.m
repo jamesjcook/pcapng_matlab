@@ -1,5 +1,4 @@
-
-function p=block_p(in,  magic_numbers,  blk_len,  block_type,  idb)
+function p=block_p(in,  blk_len,  block_type,  idb)
 % Packet Block (PB)
 %{
     0                   1                   2                   3
@@ -31,4 +30,5 @@ function p=block_p(in,  magic_numbers,  blk_len,  block_type,  idb)
    |                      Block Total Length                       |
    +---------------------------------------------------------------+
  %}
+
  end

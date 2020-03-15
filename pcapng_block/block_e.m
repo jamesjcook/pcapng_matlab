@@ -1,5 +1,3 @@
-
-
 function eb=block_e(input,blk_len)
 % Encryption Block 
 %{

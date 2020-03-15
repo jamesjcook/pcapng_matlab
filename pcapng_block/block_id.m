@@ -1,5 +1,4 @@
-
-function id=block_id(in,  magic_numbers,  blk_len,  block_type)
+function id=block_id(in,  blk_len,  block_type,  magic_numbers)
 % Interface Description Block
 %{
     0                   1                   2                   3

@@ -1,5 +1,3 @@
-
-
 function fl=block_fl(input,blk_len)
 % Fixed Length Block
 %{

@@ -1,30 +1,32 @@
 % test_pcapngread
-%{ 
-% static cap test
-po_prof=getenv('USERPROFILE');
-cap_file=fullfile(po_prof,'\Documents\code\matlab\gta5packetcap\cap_buffer\ring_00000_20200306231659.pcapng')
-%}
 
-%live cap test for 4 seconds
-
-capfile=struct;
-
+%live cap test for 1 seconds
 ret.s=1
 ret.p=inf;
 ret.b=inf;
-p=cell(0);
 
-capfile=pcapng_read(cap_buf,ret,capfile);
-p{end+1}=capfile.packets;
+% static cap test
+if ~exist('live_cap','var')
+  po_prof=getenv('USERPROFILE');
+  cap_file=fullfile(po_prof,'\Documents\code\matlab\gta5packetcap\static_captures\GTA5WiresharkCap_20200307_first20k_gta.pcapng')
+  capfile=pcapng_read(cap_file,ret);
+  
+  pcapng_read('',ret,capfile);
+end
 
-capfile=pcapng_read(cap_buf,ret,capfile);
-p{end+1}=capfile.packets;
+if exist('live_cap','var')
+  p=cell(0);
+  capfile=pcapng_read(cap_buf,ret);
+  p{end+1}=capfile.packets;
 
-section_count=numel(capfile)
+  capfile=pcapng_read(cap_buf,ret);
+  p{end+1}=capfile.packets;
+
+end
+section_count=numel(capfile.sections)
 
 
 %{
-cap=capture_read(capfile)
 packet_time(capfile(1).packets(1).timestamp,capfile(1).interface(1).options)
 %sum(numel(capfile(:).interface))
 

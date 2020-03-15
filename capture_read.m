@@ -1,4 +1,4 @@
-function [cap,cap_meta]=capture_read(cap_file,cap_meta)
+function cap=capture_read(cap_file)
 % function cap=capture_read(txt_cap)
 % given a wireshark capture in a structure or in k12 text format (for now, maybe cooler types in future)
 % divde it up into appropriate struct fields for: 

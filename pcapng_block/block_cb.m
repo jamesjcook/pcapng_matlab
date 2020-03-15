@@ -1,5 +1,3 @@
-
-
 function cb=block_cb(input,blk_len)
 % Custom Block 
 %{

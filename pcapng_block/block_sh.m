@@ -1,4 +1,4 @@
-function bl=block_sh(in,  magic_numbers,  blk_len,  block_type)
+function bl=block_sh(in,  blk_len,  block_type,  magic_numbers)
 % Section Header Block
 %{
    0                   1                   2                   3
@@ -39,9 +39,9 @@ function bl=block_sh(in,  magic_numbers,  blk_len,  block_type)
   bl.vers_major=fread(in,1,'uint16=>uint16');
   bl.vers_minor=fread(in,1,'uint16=>uint16');
   bl.section_length=fread(in,1,'int64=>int64');
+  % len in octets of data in the following section.
   if bl.section_length==-1
     % unspecified length
-  end
   end
   opt_len=blk_len-24-4;
   if opt_len>0

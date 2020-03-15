@@ -1,5 +1,4 @@
-
-function sdj=block_sdj(input,  magic_numbers,  blk_len)
+function sdj=block_sdj(input,  blk_len,  magic_numbers)
 % systemd Journal Export Block 
 %{
     0                   1                   2                   3

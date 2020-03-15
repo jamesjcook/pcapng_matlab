@@ -1,8 +1,26 @@
-function sections=pcapng_read(in,ret,sections)
+function capfile=pcapng_read(in,ret,capfile)
   % returns after first return condition is met, (b)lock, (s)econds, (p)ackets.
   % input is either open app/file handle or path to static file to read.
   % Returns the logical block hierarchy like the spec talks of.
-
+  % We can elect to continute reading after we stop by calling again, 
+  % that will update the data structure internal to the function. 
+  %
+  % I should test the persistenc thing by allocating a large rand array. 
+  % External to this function we should only be reading parts of the cap file, 
+  % not updating it. In theory, that should mean no replicates.
+  
+  %ret.p=inf;
+  %ret.s=1;
+  % blocks seems very similar to packets...
+  %ret.b=10; 
+  % return conditions is ugly. 
+  % either N seconds, or N blocks or N packets all make sense.
+  %{
+  ret.s=0;
+  ret.p=0;
+  ret.b=0;
+  %}
+  
 code_path=fileparts(mfilename('fullpath'));
 addpath(fullfile(code_path,'pcapng_block'));
 addpath(fullfile(code_path,'utils'));
@@ -39,8 +57,8 @@ Section Header
 %}
 
 % With this idea of logical dumpfile hierarchy, 
-% lets make a capfile a struct with sections and name resolutions.
-% sections are an array of structs
+% lets make a capfile a struct with capfile and name resolutions.
+% capfile are an array of structs
 % section structs have an array of interface structs, packets. 
 
 %{
@@ -55,18 +73,16 @@ capfile.sections(2).interface(2).
 capfile.packet_count
 %}
 end
-
-%{
-In memory lets organize things neatishly, like
-interface->packets
-interface->stats
-ips->nslookup
-That means tearing our structure apart a bit.
-%}
-  if ~isnumeric(in) && exist(in,'file')
-    in=fopen(in);
+  cleaner={};
+  % Maybe in should be moved into the capfile object?
+  if ~isnumeric(in)&& ~exist('capfile','var')
+    if exist(in,'file')
+      in=fopen(in);
+      %cleaner{end+1} = onCleanup(@() fclose(in));
+    else
+      error('misisng %s',in);
+    end
   end
-  %fingerprint=fread(in,5,'uint8=>uint8');
 
   if 0 % doc block of block types
     
@@ -115,16 +131,129 @@ Used to detect trace files corrupted because of file transfers using the HTTP
 0x80000000-0xFFFFFFFF	
 %}
   end
-  % not sure how to effectivly share all the magic numbers.... 
-  magic_numbers.endian=hex2dec('1A2B3C4D');
-  %ret.p=inf;
-  %ret.s=1;
-  % blocks seems very similar to packets...
-  %ret.b=10; 
-  % read stop logic is currently in block read, should migrate that up here.
-  sections=block_read(in,  ret,  sections,  magic_numbers);
-  % should this just  be the "packet" stream?  Or should we be a pcapng struct in memory after some fashion?
+  max_seconds=ret.s;
+  max_packets=ret.p;
+  max_blocks=ret.b;
+
+  if ~exist('capfile','var') || ~isa(capfile,'pcapng')
+    capfile=pcapng(in);
+  else
+    in=capfile.in;
+  end
   
+  t_delta=0;
+  t_start=0;
+  t_read=tic;
+  curs=capfile.current_section;
+  while ~feof(in)
+    block=struct;
+    block.type=fread(in,1,'uint32=>uint32');
+    if isempty(block.type)
+      % another eof condition?
+      break;
+    end
+    block.total_length=fread(in,1,'uint32=>uint32');
+    if block.type==6
+    % 0x00000006	Enhanced Packet Block
+      ep=block_ep(in,  block.total_length,  block.type);
+      capfile.sections(curs).packets(end+1)=ep;
+      capfile.packet_seq=capfile.packet_seq+1;
+      % get interface, and put p data on it
+      capfile.sections(curs).interface(ep.interface+1).packet_idx(end+1)=capfile.packet_seq;
+      if max_seconds<inf
+        [~,p_time]=packet_time(capfile.sections(curs).packets(end).timestamp,capfile.sections(curs).interface(ep.interface+1).options);
+
+        if t_start==0
+          t_start=p_time;
+        else
+          t_delta=p_time-t_start;
+        end
+      end
+      clear('ep');
+    elseif block.type==3
+    % 0x00000003	Simple Packet Block
+      sp=block_sp(in,  block.total_length,  block.type,  capfile.magic_numbers);
+      capfile.sections(curs).packets(end+1)=sp;
+      capfile.packet_seq=capfile.packet_seq+1;
+      % simple packets assume interface 0, there is a MUST in the standard.
+      % dont mind my 1 vs. 0 indesing here.
+      capfile.sections(curs).interface(1).packet_idx(end+1)=capfile.packet_seq;
+      clear('sp');
+    elseif block.type== 2
+    % 0x00000002	Packet Block
+      error('unimplemented %x ',block.type);
+    elseif block.type== 1
+    %  0x00000001	Interface Description Block
+      capfile.sections(curs).interface(  ...
+          numel(capfile.sections(curs).interface)+1  )=  ...
+              block_id(in,  block.total_length,  block.type);
+    elseif block.type== 5
+    % 0x00000005	Interface Statistics Block
+      error('unimplemented %x ',block.type);
+    elseif block.type== 4
+    % 0x00000004	Name Resolution Block
+      error('unimplemented %x ',block.type);
+    elseif block.type== 7
+    % 0x00000007	IRIG Timestamp Block (requested by Gianluca Varenni 
+    %     <gianluca.varenni@cacetech.com>, CACE Technologies LLC); 
+    %     code also used for Socket Aggregation Event Block
+      error('unimplemented %x ',block.type);
+    elseif block.type== 0
+      % 0x00000000	Reserved ???
+      error('unimplemented %x ',block.type);
+    elseif block.type==hex2dec('0A0D0D0A')
+      % 0x0A0D0D0A	Section Header Block
+      sh=block_sh(in,  block.total_length,  block.type,  capfile.magic_numbers);
+      curs=curs+1;
+      capfile.current_section=curs;
+      capfile.sections(curs)=capfile.section_template;
+      capfile.sections(curs).header=sh;
+      clear('sh');
+    elseif block.type==hex2dec('00000BAD') ... 
+      || block.type==hex2dec('40000BAD')
+      error('cust blocks unimplemented');
+      cb=block_cb(in,  block.total_length,  block.type);
+    else
+      db_inplace(mfilename,sprintf('unimplemented block type %x gobbling up its bits',block.type));
+      %db_inplace(mfilename,sprintf('unexpected block type %i',block.type));
+      block.body=fread(in,  block.total_length-8-4,  'uint8=>uint8');
+    end
+    block.total_length2=fread(in,1,'uint32=>uint32');
+    if block.total_length ~= block.total_length2
+      db_inplace(mfilename,sprintf('Corrupt block - %i in len %i, out len %i',capfile.block_count, block.total_length,  ...
+      block.total_length2)  );
+      %error('Corrupt block - %i',capfile.block_count);
+    end
+    
+    % should this just  be the "packet" stream?  Or should we be a pcapng struct in memory after some fashion?
+    capfile.block_count=capfile.block_count+1;
+    %if t_delta==0
+      t_delta=toc(t_read);
+    %end
+    if t_delta >= max_seconds...
+      || capfile.block_count >= max_blocks ...
+      || numel(capfile.packet_seq) >= max_packets
+      % end condition met, quit reading
+      break;
+    end
+    t_delta=0;
+  end
+
+  for sect=1:curs
+    for i_iface=1:numel(capfile.sections(sect).interface)
+      if numel(capfile.sections(sect).packets)==0
+        break;
+      end
+      capfile.sections(sect).interface(i_iface).last_packet_timestamp=capfile.sections(sect).packets(end).timestamp;
+      [~,p_time]=packet_time(capfile.sections(sect).interface(i_iface).last_packet_timestamp, ...
+          capfile.sections(sect).interface(i_iface).options);
+      if p_time>capfile.t_last_packet
+        capfile.t_last_packet=p_time;
+      end
+    end
+  end
+  
+
   return;
 
 end

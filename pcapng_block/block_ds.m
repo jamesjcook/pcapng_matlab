@@ -1,4 +1,3 @@
-
 function ds=block_ds(input,blk_len)
 % Decryption Secrets Block
 %{
