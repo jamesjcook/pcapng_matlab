@@ -1,4 +1,4 @@
-function bl=block_is(input,  blk_len,  magic_numbers)
+function bl=block_is(in,  blk_len,  block_type)
 %Interface Statistics Block
 %{
     0                   1                   2                   3

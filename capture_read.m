@@ -1,4 +1,4 @@
-function cap=capture_read(cap_file)
+function cap=capture_read(cap_file,packet_skip,packet_stop)
 % function cap=capture_read(txt_cap)
 % given a wireshark capture in a structure or in k12 text format (for now, maybe cooler types in future)
 % divde it up into appropriate struct fields for: 
@@ -14,10 +14,6 @@ function cap=capture_read(cap_file)
 %
 
 % code trailing:D 
-code_path=fileparts(mfilename('fullpath'));
-addpath(fullfile(code_path,'packet_asciihex'));
-addpath(fullfile(code_path,'packet_bin'));
-addpath(fullfile(code_path,'utils'));
 
 %{
 k12 text capture example, no attempt to validate against official docs, just the output of wireshark. Ex of two packets in following block comment
@@ -98,8 +94,11 @@ cap =
     cap_meta=struct;
   end
   %}
+  if ~exist('packet_skip','var')
+    packet_skip=0;
+  end
   cap={};
-  if isstruct(cap_file)
+  if isa(cap_file,'pcapng')
     for sect=1:numel(cap_file)
     %{
       cap_meta(sect).header=capfile(sect).header;
@@ -109,24 +108,48 @@ cap =
         cap_meta(sect).interface(i_n).packet_idx=[];
       end
     %}
-      for pn=1:numel(cap_file(sect).packets)
-        ef=bin2etherframe(cap_file(sect).packets(pn).data);
+      if ~exist('packet_stop','var')||packet_stop<=0 ||packet_stop==inf ...
+        || packet_stop> numel(cap_file.sections(sect).packets)
+        packet_stop=numel(cap_file.sections(sect).packets)
+      end
+      for pn=1+packet_skip:packet_stop
+        ef=bin2etherframe(cap_file.sections(sect).packets(pn).data);
         try
-          ipv4=bin2ipv4(ef.payload);
-          ef=rmfield(ef,'payload');
+          ip=bin2ipv4(ef.payload);
+          %ef=rmfield(ef,'payload');
         catch
           % fprintf('skipping packet %i\n',pn);
+          % ipv4=[];
           continue;
         end
-        udp=bin2udp(ipv4.payload);
-        ipv4=rmfield(ipv4,'payload');
+        udp=bin2udp(ip.payload);
+        %ipv4=rmfield(ip,'payload');
+        
+        % to avoid combine struct which sums up to significant runtime eventually, 
+        % we'll hard code the combine struct operation. The fiels are constant anyway.
+        %phy_fields={'dst','src','type'};
+        %ip_fields={'version', 'IHL', 'DSCP', 'ECN', 'total_length', 'id', 'flags', 'fragment_offset', 'TTL', 'protocol','cksum', 'src', 'dst'};
+        %upd_fields={'srcport', 'dstport', 'length', 'checksum'};
+        
+        packet=struct('phy_dst',ef.dst,'phy_src',ef.src,'phy_type',ef.type, ...
+                      'ip_version',ip.version,'ip_IHL',ip.IHL,'ip_DSCP',ip.DSCP, ...
+                      'ip_ECN',ip.ECN,'ip_total_length',ip.total_length, ...
+                      'ip_id',ip.id,'ip_flags',ip.flags, ... 
+                      'ip_fragment_offset',ip.fragment_offset,'ip_TTL',ip.TTL, ...
+                      'ip_protocol',ip.protocol,'ip_cksum',ip.cksum,...
+                      'ip_src',ip.src,'ip_dst',ip.dst,...
+                      'udp_srcport',udp.srcport,'udp_dstport',udp.dstport,...
+                      'udp_length',udp.length,'udp_checksum',udp.checksum, ...
+                      'payload',udp.payload  );
+        
+        %{
         packet=combine_struct(struct,ef, 'phy_');
         if exist('ipv4','var')
           packet=combine_struct(packet,ipv4,'ip_');
         elseif exist('ipv6','var')
           packet=combine_struct(packet,ipv6,'ip_');
         else
-          
+          % phy_fields{end+1}='payload';
         end
         if exist('udp','var')
           packet=combine_struct(packet,udp, 'udp_');
@@ -134,7 +157,9 @@ cap =
           packet=combine_struct(packet,tcp, 'udp_');
         else
         end
-        packet.capture_time=packet_time(cap_file(sect).packets(pn).timestamp,cap_file(sect).interface.options);
+        %}
+      
+        packet.capture_time=packet_time(cap_file.sections(sect).packets(pn).timestamp,cap_file.sections(sect).interface.options);
         cap{end+1}=packet;
       end
     end

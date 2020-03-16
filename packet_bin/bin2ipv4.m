@@ -39,9 +39,11 @@ function ipv4=bin2ipv4(bin,verbosity)
   % udp is 17
   ipv4.cksum=typecast(bin(11:12),'uint16');
   % 96:127
-  ipv4.src=ip_conv(bin(13:16),'dec2ip');
+  %ipv4.src=ip_conv(bin(13:16),'dec2ip');
+  ipv4.src=bin(13:16);
   % 128:159
-  ipv4.dst=ip_conv(bin(17:20),'dec2ip');
+  %ipv4.dst=ip_conv(bin(17:20),'dec2ip');
+  ipv4.dst=bin(17:20);
   if ipv4.IHL>5 
     error('Options unimplemented');
     ipv4.options='';
