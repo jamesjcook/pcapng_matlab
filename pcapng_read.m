@@ -21,9 +21,6 @@ function capfile=pcapng_read(in,ret,capfile)
   ret.b=0;
   %}
   
-code_path=fileparts(mfilename('fullpath'));
-addpath(fullfile(code_path,'pcapng_block'));
-addpath(fullfile(code_path,'utils'));
 debugging=0;
 % Per spec at http://xml2rfc.tools.ietf.org/cgi-bin/xml2rfc.cgi?url=
 % https://raw.githubusercontent.com/pcapng/pcapng/master/
@@ -196,7 +193,9 @@ Used to detect trace files corrupted because of file transfers using the HTTP
               block_id(in,  block.total_length,  block.type);
     elseif block.type== 5
     % 0x00000005	Interface Statistics Block
-      error('unimplemented %x ',block.type);
+      is=block_is(in,  block.total_length,  block.type);
+      capfile.sections(curs).interface(is.interface+1).stats=is;
+      %error('unimplemented %x ',block.type);
     elseif block.type== 4
     % 0x00000004	Name Resolution Block
       error('unimplemented %x ',block.type);
