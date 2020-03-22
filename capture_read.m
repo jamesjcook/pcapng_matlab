@@ -1,8 +1,14 @@
 function cap=capture_read(cap_file,packet_skip,packet_stop)
-% function cap=capture_read(txt_cap)
-% given a wireshark capture in a structure or in k12 text format (for now, maybe cooler types in future)
-% divde it up into appropriate struct fields for: 
-% an ETHER frame? 
+% function cap=capture_read(capture)
+% function cap=capture_read(cap_file,packet_skip,packet_stop)
+% given a wireshark capture in a data structure as returned by pcapng_read, or 
+% in k12 text format (for now, maybe cooler types in future)
+% optionally give packet skip and stop to jump N packets into he file, and stop 
+% at some index.
+% Only simple pcapng's suppoite currently
+% 
+% load divde it up into appropriate struct fields for: 
+% ethernet frame 
 % + ipv4 
 % + udp packet.
 % 
@@ -89,25 +95,12 @@ cap =
 
 }
 %}
-%{
-  if ~exist('cap_meta','var')
-    cap_meta=struct;
-  end
-  %}
   if ~exist('packet_skip','var')
     packet_skip=0;
   end
   cap={};
   if isa(cap_file,'pcapng')
     for sect=1:numel(cap_file)
-    %{
-      cap_meta(sect).header=capfile(sect).header;
-      cap_meta(sect).block_count=capfile(sect).block_count;
-      for i_n=1:numel(sect_meta(sect).interface)
-        cap_meta(sect).interface(i_n)=capfile(sect).interface(i_n);
-        cap_meta(sect).interface(i_n).packet_idx=[];
-      end
-    %}
       if ~exist('packet_stop','var')||packet_stop<=0 ||packet_stop==inf ...
         || packet_stop> numel(cap_file.sections(sect).packets)
         packet_stop=numel(cap_file.sections(sect).packets)
@@ -131,7 +124,7 @@ cap =
         %ipv4=rmfield(ip,'payload');
         end
         % to avoid combine struct which sums up to significant runtime eventually, 
-        % we'll hard code the combine struct operation. The fiels are constant anyway.
+        % we'll hard code the combine struct operation. The fields are constant anyway.
         %phy_fields={'dst','src','type'};
         %ip_fields={'version', 'IHL', 'DSCP', 'ECN', 'total_length', 'id', 'flags', 'fragment_offset', 'TTL', 'protocol','cksum', 'src', 'dst'};
         %upd_fields={'srcport', 'dstport', 'length', 'checksum'};
@@ -147,22 +140,6 @@ cap =
                       'udp_length',udp.length,'udp_checksum',udp.checksum, ...
                       'payload',udp.payload  );
         
-        %{
-        packet=combine_struct(struct,ef, 'phy_');
-        if exist('ipv4','var')
-          packet=combine_struct(packet,ipv4,'ip_');
-        elseif exist('ipv6','var')
-          packet=combine_struct(packet,ipv6,'ip_');
-        else
-          % phy_fields{end+1}='payload';
-        end
-        if exist('udp','var')
-          packet=combine_struct(packet,udp, 'udp_');
-        elseif exist('tcp','var')
-          packet=combine_struct(packet,tcp, 'udp_');
-        else
-        end
-        %}
       
         packet.capture_time=packet_time(cap_file.sections(sect).packets(pn).timestamp,cap_file.sections(sect).interface.options);
         cap{end+1}=packet;

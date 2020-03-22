@@ -2,19 +2,14 @@ function capfile=pcapng_read(in,ret,capfile)
   % returns after first return condition is met, (b)lock, (s)econds, (p)ackets.
   % input is either open app/file handle or path to static file to read.
   % Returns the logical block hierarchy like the spec talks of.
-  % We can elect to continute reading after we stop by calling again, 
-  % that will update the data structure internal to the function. 
-  %
-  % I should test the persistenc thing by allocating a large rand array. 
-  % External to this function we should only be reading parts of the cap file, 
-  % not updating it. In theory, that should mean no replicates.
-  
-  %ret.p=inf;
-  %ret.s=1;
-  % blocks seems very similar to packets...
-  %ret.b=10; 
+  % This is a reference object. 
+  % We can elect to continute reading after we stop by calling again with that 
+  % reference object.
+  % 
   % return conditions is ugly. 
   % either N seconds, or N blocks or N packets all make sense.
+  % For real time  capture work, use seconds to engage special machinery to 
+  % block up the capture as you got into chunks of seconds. 
   %{
   ret.s=0;
   ret.p=0;
