@@ -115,16 +115,21 @@ cap =
       for pn=1+packet_skip:packet_stop
         ef=bin2etherframe(cap_file.sections(sect).packets(pn).data);
         try
-          ip=bin2ipv4(ef.payload);
-          %ef=rmfield(ef,'payload');
+          % ipv4 should follow the same pattern as ipv6, but we dont have to because a value of 8 comes in very low.
+          if ef.type==[08;00]
+            ip=bin2ipv4(ef.payload);
+          elseif ef.type==[ hex2num('86','uint8');  hex2num('dd','uint8') ]
+          end
         catch
           % fprintf('skipping packet %i\n',pn);
           % ipv4=[];
           continue;
         end
-        udp=bin2udp(ip.payload);
+        % udp is 17
+        if ip.protocol==17
+          udp=bin2udp(ip.payload);
         %ipv4=rmfield(ip,'payload');
-        
+        end
         % to avoid combine struct which sums up to significant runtime eventually, 
         % we'll hard code the combine struct operation. The fiels are constant anyway.
         %phy_fields={'dst','src','type'};

@@ -68,7 +68,11 @@ capfile.sections(1).interface(2).
 capfile.sections(1).interface(1).stats
 capfile.sections(2).interface(1).
 capfile.sections(2).interface(2).
-capfile.packet_count
+capfile.packet_seq 
+capfile.block_count
+capfile.packet_seconds
+capfile.second_index
+capfile.t_last_packet
 %}
 end
   cleaner={};
@@ -161,12 +165,12 @@ Used to detect trace files corrupted because of file transfers using the HTTP
       % get interface, and put p data on it
       capfile.sections(curs).interface(ep.interface+1).packet_idx(end+1)=capfile.packet_seq;
       if max_seconds<inf
-        [~,p_time]=packet_time(capfile.sections(curs).packets(end).timestamp,capfile.sections(curs).interface(ep.interface+1).options);
+        [~,t_packet]=packet_time(capfile.sections(curs).packets(end).timestamp,capfile.sections(curs).interface(ep.interface+1).options);
 
         if t_start==0
-          t_start=p_time;
+          t_start=t_packet;
         else
-          t_delta=p_time-t_start;
+          t_delta=t_packet-t_start;
         end
       end
       if debugging>50
@@ -222,7 +226,8 @@ Used to detect trace files corrupted because of file transfers using the HTTP
       error('cust blocks unimplemented');
       cb=block_cb(in,  block.total_length,  block.type);
     else
-      db_inplace(mfilename,sprintf('unimplemented block type %x gobbling up its bits',block.type));
+      % db_inplace(mfilename,sprintf('unimplemented block type %x gobbling up its bits',block.type));
+      error(sprintf('unimplemented block type %x gobbling up its bits',block.type));
       %db_inplace(mfilename,sprintf('unexpected block type %i',block.type));
       block.body=fread(in,  block.total_length-8-4,  'uint8=>uint8');
     end
@@ -235,12 +240,24 @@ Used to detect trace files corrupted because of file transfers using the HTTP
     
     % should this just  be the "packet" stream?  Or should we be a pcapng struct in memory after some fashion?
     capfile.block_count=capfile.block_count+1;
-    %if t_delta==0
-      t_delta=toc(t_read);
-    %end
+    funct_time=toc(t_read);
+    if funct_time>=max_seconds && funct_time> t_delta
+      warning('packet delta over ridden by funct, %f <- %f',t_delta,funct_time);
+      t_delta=funct_time;
+    end
     if t_delta >= max_seconds...
       ||capfile.block_count -start_block >= max_blocks ...
       ||capfile.packet_seq -start_packet >= max_packets
+      if (t_delta>=max_seconds) 
+        capfile.packet_seconds=capfile.packet_seconds+1;
+        %{
+        fprintf('return tripped(%i) .. %0.2f >= %i \n', ... 
+                 capfile.packet_seconds,t_delta,max_seconds);
+        %}
+        % this is only in effect if we're using seconds to gate our return. 
+        % that should leave both of these at zero the rest of the time. 
+        capfile.second_index(capfile.packet_seconds)=capfile.packet_seq-1;
+      end
       % end condition met, quit reading
       break;
     end
@@ -253,10 +270,10 @@ Used to detect trace files corrupted because of file transfers using the HTTP
         break;
       end
       capfile.sections(sect).interface(i_iface).last_packet_timestamp=capfile.sections(sect).packets(end).timestamp;
-      [~,p_time]=packet_time(capfile.sections(sect).interface(i_iface).last_packet_timestamp, ...
+      [~,t_packet]=packet_time(capfile.sections(sect).interface(i_iface).last_packet_timestamp, ...
           capfile.sections(sect).interface(i_iface).options);
-      if p_time>capfile.t_last_packet
-        capfile.t_last_packet=p_time;
+      if t_packet>capfile.t_last_packet
+        capfile.t_last_packet=t_packet;
       end
     end
   end
