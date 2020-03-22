@@ -147,7 +147,7 @@ cap =
     end
   else
   pack_sep='+---------+---------------+----------+';
-  fid = fopen(txt_cap);
+  fid = fopen(cap_file);
   onCleanup(@() fclose(fid));
   dstlineidx = 0;
   packet='';
